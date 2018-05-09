@@ -58,6 +58,10 @@ class Ui_MainWindow(object):
         self.Keyword_input.setGeometry(QtCore.QRect(70, 570, 113, 20))
         self.Keyword_input.setObjectName("Keyword_input")
 
+        self.Pdf_input = QtWidgets.QLineEdit(self.centralwidget)
+        self.Pdf_input.setGeometry(QtCore.QRect(400, 570, 113, 20))
+        self.Pdf_input.setObjectName("Pdf_input")
+
         self.CAS_Input = QtWidgets.QLineEdit(self.centralwidget)
         self.CAS_Input.setGeometry(QtCore.QRect(250, 570, 113, 20))
         self.CAS_Input.setText("")
@@ -70,6 +74,10 @@ class Ui_MainWindow(object):
         self.label_CAS = QtWidgets.QLabel(self.centralwidget)
         self.label_CAS.setGeometry(QtCore.QRect(205, 568, 51, 21))
         self.label_CAS.setObjectName("label_CAS")
+
+        self.label_PDF = QtWidgets.QLabel(self.centralwidget)
+        self.label_PDF.setGeometry(QtCore.QRect(370, 568, 51, 21))
+        self.label_PDF.setObjectName("label_PDF")
 
         self.WVCOlogo = QtWidgets.QLabel(self.centralwidget)
         self.WVCOlogo.setGeometry(QtCore.QRect(510, 20, 101, 101))
@@ -95,37 +103,41 @@ class Ui_MainWindow(object):
         # ----------------------- Click parameters -----------------------
 
     def on_click_pdf(self):
-        if not self.for_pdf_header or not self.for_pdf:
-            return self.Output_View.append("\nPDF File could not be made because you havent searched for anything")
-        pdf = FPDF(format="letter")
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        for i in range(len(self.for_pdf_header)):
-            check = 15
-            font = 35
-            if len(self.for_pdf_header[i]) > 20:
-                font = 20
-            if len(self.for_pdf_header[i]) > 60:
-                font = 10
-            pdf.cell(w=70)
-            pdf.set_font("Arial", style="B", size=font)
-            pdf.cell(40, 10, "".join(self.for_pdf_header[i]), ln=0, align="C")
-            pdf.ln(check)
-            check += 15
-        pdf.ln(20)
-        pdf.cell(w=40)
-        for i in range(len(self.for_pdf)):
-            font = 13
-            if len(self.for_pdf[i]) > 50:
-                font = 10
-            if len(self.for_pdf[i]) > 110:
-                font = 5
-            pdf.set_font("Arial", size=font)
-            pdf.cell(100, 10, "".join(self.for_pdf[i]), ln=1, align="C")
+        pdf_file = self.Pdf_input.text()
+        if pdf_file:
+            if pdf_file[len(pdf_file) - 4: len(pdf_file)] == ".pdf":
+                return self.Output_View.append("Do not add any extensions like .pdf to the end.")
+            if not self.for_pdf_header or not self.for_pdf:
+                return self.Output_View.append("\nPDF File could not be made because you havent searched for anything")
+            pdf = FPDF(format="letter")
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            for i in range(len(self.for_pdf_header)):
+                check = 15
+                font = 35
+                if len(self.for_pdf_header[i]) > 20:
+                    font = 20
+                if len(self.for_pdf_header[i]) > 60:
+                    font = 10
+                pdf.cell(w=70)
+                pdf.set_font("Arial", style="B", size=font)
+                pdf.cell(40, 10, "".join(self.for_pdf_header[i]), ln=0, align="C")
+                pdf.ln(check)
+                check += 15
+            pdf.ln(20)
             pdf.cell(w=40)
+            for i in range(len(self.for_pdf)):
+                font = 13
+                if len(self.for_pdf[i]) > 50:
+                    font = 10
+                if len(self.for_pdf[i]) > 110:
+                    font = 5
+                pdf.set_font("Arial", size=font)
+                pdf.cell(100, 10, "".join(self.for_pdf[i]), ln=1, align="C")
+                pdf.cell(w=40)
 
-        pdf.output("Test.pdf")
-        self.Output_View.append("\nPDF file made.")
+            pdf.output(str(pdf_file) + ".pdf")
+            self.Output_View.append("\nPDF file made.")
 
     def on_click_clear(self):
         self.Output_View.clear()
@@ -361,6 +373,7 @@ class Ui_MainWindow(object):
         self.Print_PDF.setText(_translate("MainWindow", "PDF"))
         self.label_keyword.setText(_translate("MainWindow", "Keyword"))
         self.label_CAS.setText(_translate("MainWindow", "CAS #"))
+        self.label_PDF.setText(_translate("MainWindow", "PDF"))
 
         # -------------------------------------------------------------------
 
