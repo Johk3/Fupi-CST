@@ -15,6 +15,7 @@ import sys
 import sqlite3
 import os
 from fpdf import FPDF
+import re
 
 # User interface
 
@@ -27,11 +28,11 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(637, 651)
 
-        self.for_pdf_header = []
-        self.for_pdf = []
+        self.for_pdf_header = [] # This stores all the headers for the pdf file
+        self.for_pdf = [] # This stores all the information for the pdf file
 
-        self.databases = []
-        self.i = 1
+        self.databases = [] # This holds all the databases in database folder
+        self.i = 1 # This is just a check that you dont need to worry about but dont delete this, this is essential
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -104,42 +105,57 @@ class Ui_MainWindow(object):
 
     def on_click_pdf(self):
         pdf_file = self.Pdf_input.text()
+        # If pdf filename exists then do this
         if pdf_file:
-            if pdf_file[len(pdf_file) - 4: len(pdf_file)] == ".pdf":
-                return self.Output_View.append("Do not add any extensions like .pdf to the end.")
-            if not self.for_pdf_header or not self.for_pdf:
-                return self.Output_View.append("\nPDF File could not be made because you havent searched for anything")
-            pdf = FPDF(format="letter")
-            pdf.add_page()
-            pdf.set_font("Arial", size=12)
-            for i in range(len(self.for_pdf_header)):
-                check = 15
-                font = 35
-                if len(self.for_pdf_header[i]) > 20:
-                    font = 20
-                if len(self.for_pdf_header[i]) > 60:
-                    font = 10
-                pdf.cell(w=70)
-                pdf.set_font("Arial", style="B", size=font)
-                pdf.cell(40, 10, "".join(self.for_pdf_header[i]), ln=0, align="C")
-                pdf.ln(check)
-                check += 15
-            pdf.ln(20)
-            pdf.cell(w=40)
-            for i in range(len(self.for_pdf)):
-                font = 13
-                if len(self.for_pdf[i]) > 50:
-                    font = 10
-                if len(self.for_pdf[i]) > 110:
-                    font = 5
-                pdf.set_font("Arial", size=font)
-                pdf.cell(100, 10, "".join(self.for_pdf[i]), ln=1, align="C")
+            try:
+                # If pdf filename ends with ".pdf" alert the user because it cannot end like that
+                if pdf_file[len(pdf_file) - 4: len(pdf_file)] == ".pdf":
+                    return self.Output_View.append("Do not add any extensions like .pdf to the end.")
+                # If nothing in pdf_header or for_pdf then tell the user this
+                if not self.for_pdf_header or not self.for_pdf:
+                    return self.Output_View.append("\nPDF File could not be made because you havent searched for anything")
+                pdf = FPDF(format="letter")
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                headers = []
+                # Loop through all of the headers and add them to the file
+                for i in range(len(self.for_pdf_header)):
+                    check = 15
+                    font = 35
+                    if len(self.for_pdf_header[i]) > 20:
+                        font = 20
+                    if len(self.for_pdf_header[i]) > 60:
+                        font = 15
+                    pdf.cell(w=70)
+                    pdf.set_font("Arial", style="B", size=font)
+                    pdf.cell(40, 10, "".join(self.for_pdf_header[i]), ln=0, align="C")
+                    pdf.ln(check)
+                    check += 15
+                pdf.ln(20)
                 pdf.cell(w=40)
+                # Loops through all of the information in for_pdf and puts them into the pdf file
+                for i in range(len(self.for_pdf)):
+                    font = 13
+                    if len(self.for_pdf[i]) > 50:
+                        font = 10
+                    if len(self.for_pdf[i]) > 110:
+                        font = 7
+                    if len(self.for_pdf[i]) > 150:
+                        font = 5
+                    pdf.set_font("Arial", size=font)
+                    pdf.cell(100, 10, "".join(self.for_pdf[i]), ln=1, align="C")
+                    pdf.cell(w=40)
 
-            pdf.output(str(pdf_file) + ".pdf")
-            self.Output_View.append("\nPDF file made.")
+                pdf.output(str(pdf_file) + ".pdf")
+                # Makes the PDF file
+                return self.Output_View.append("\nPDF file made.")
+            except Exception as e:
+                return self.Output_View.append("Error happened while making PDF file\nERROR OUTPUT" + str(e))
+        # If there was no pdf filename then alert the user
+        return self.Output_View.append("\nYou need to give me a PDF filename")
 
     def on_click_clear(self):
+        # Clears all these things on click
         self.Output_View.clear()
         self.for_pdf_header.clear()
         self.for_pdf.clear()
@@ -148,8 +164,10 @@ class Ui_MainWindow(object):
         keyValue = self.Keyword_input.text()
         casValue = self.CAS_Input.text()
         results = []
+        # If the user gave some input do this
         if keyValue or casValue:
             # For loops for all of the databses in database folder
+            # self.i is making sure that the loop only happens once and not everytime you click on seach
             if self.i == 1:
                 for filenames in os.listdir("database"):
                     if "".join(filenames)[len("".join(filenames)) - 2: len("".join(filenames))] == "db":
@@ -158,7 +176,7 @@ class Ui_MainWindow(object):
                         self.databases.append("".join(filenames))
 
                 self.i += 1
-
+            # Tries to find the users output from all of the databases in database folder
             for database in self.databases:
                 print("READING {}...".format(database))
                 con = sqlite3.connect("database/" + str(database))
@@ -168,27 +186,28 @@ class Ui_MainWindow(object):
                 if casValue != "":
                     cur.execute("SELECT * FROM results WHERE CASno = ?", (casValue,))
                     casresult = cur.fetchone()
-
-                elif keyValue != "":
+                if keyValue != "":
                     cur.execute("SELECT * FROM results WHERE UPPER(name) LIKE UPPER(?)", (keyValue,))
                     nameresult = cur.fetchone()
                 cur.execute("SELECT * FROM results WHERE UPPER(name) LIKE UPPER('%{}%')".format(keyValue))
-                results.append(cur.fetchone())
-
+                if cur.fetchone() != None:
+                    results.append(cur.fetchone())
                 if casresult != None or nameresult != None:
                     break
 
             # self.Output_View.setText(total_query) #.setText creates a single instance vs. append
 
             # IF both casresult and nameresult are true do this
+            # You can ignore this part
             if casresult is not None and nameresult is not None:
                 # Checks if they both are same so it doesnt write extra stuff
                 if nameresult == casresult:
                     if self.for_pdf_header:
-                        self.for_pdf_header.append("".join(nameresult[0]))
-                        self.for_pdf.append("ECno: " + nameresult[2])
-                        self.for_pdf.append("CASno: " + nameresult[3])
-                        self.for_pdf.append("Condition: " + nameresult[5])
+                        self.for_pdf_header.append(str(keyValue))
+                        self.for_pdf.append("Keyword --> {}".format(nameresult[0]))
+                        self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                        self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                        self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
 
                         if casresult[1]:
                             self.Output_View.append("The Keyword: {} was found\nECno: {}\nCASno: {}"
@@ -213,11 +232,10 @@ class Ui_MainWindow(object):
                                                                                 nameresult[2],
                                                                                 nameresult[3],
                                                                                 nameresult[5]))
-                    self.for_pdf_header.append("".join(nameresult[0]))
-                    self.for_pdf.append("ECno: " + nameresult[2])
-                    self.for_pdf.append("CASno: " + nameresult[3])
-                    self.for_pdf.append("Entryno: " + nameresult[4])
-                    self.for_pdf.append("Condition: " + nameresult[5])
+                    self.for_pdf_header.append(str(keyValue))
+                    self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                    self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                    self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
                     if casresult[1]:
                         self.Output_View.append("The Keyword: {} was found\nECno: {}\nCASno: {}"
                                                 "\nCondition: {}".format(nameresult[0],
@@ -241,14 +259,14 @@ class Ui_MainWindow(object):
                                                                             nameresult[3],
                                                                             nameresult[5]))
                 if self.for_pdf_header:
-                    self.for_pdf_header.append(casresult[0])
-                    self.for_pdf_header.append(nameresult[0])
-                    self.for_pdf.append("{} ECno: {}".format(nameresult[0], nameresult[2]))
-                    self.for_pdf.append("{} ECno: {}".format(casresult[0], casresult[2]))
-                    self.for_pdf.append("{} CASno: {}".format(nameresult[0], nameresult[3]))
-                    self.for_pdf.append("{} CASno: {}".format(casresult[0], casresult[3]))
-                    self.for_pdf.append("{} Condition: {}".format(nameresult[0], nameresult[5]))
-                    self.for_pdf.append("{} Condition: {}".format(casresult[0], casresult[5]))
+                    self.for_pdf_header.append("CAS: " + str(casValue))
+                    self.for_pdf_header.append(str(keyValue))
+                    self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                    self.for_pdf.append("\"{}\" <--> ECno: {}".format(casresult[0], casresult[2]))
+                    self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                    self.for_pdf.append("\"{}\" <--> CASno: {}".format(casresult[0], casresult[3]))
+                    self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
+                    self.for_pdf.append("\"{}\" <--> Condition: {}".format(casresult[0], casresult[5]))
                     self.Output_View.append(
                         "\n\nKeyword: {} found & CAS number: {} found".format(nameresult[0], casresult[0]))
                     if casresult[1]:
@@ -263,14 +281,14 @@ class Ui_MainWindow(object):
                             casresult[0], casresult[3],
                             nameresult[0], nameresult[5], casresult[0], casresult[5]))
 
-                self.for_pdf_header.append(casresult[0])
-                self.for_pdf_header.append(nameresult[0])
-                self.for_pdf.append("{} ECno: {}".format(nameresult[0], nameresult[2]))
-                self.for_pdf.append("{} ECno: {}".format(casresult[0], casresult[2]))
-                self.for_pdf.append("{} CASno: {}".format(nameresult[0], nameresult[3]))
-                self.for_pdf.append("{} CASno: {}".format(casresult[0], casresult[3]))
-                self.for_pdf.append("{} Condition: {}".format(nameresult[0], nameresult[5]))
-                self.for_pdf.append("{} Condition: {}".format(casresult[0], casresult[5]))
+                self.for_pdf_header.append("CAS: " + str(casValue))
+                self.for_pdf_header.append(str(keyValue))
+                self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                self.for_pdf.append("\"{}\" <--> ECno: {}".format(casresult[0], casresult[2]))
+                self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                self.for_pdf.append("\"{}\" <--> CASno: {}".format(casresult[0], casresult[3]))
+                self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
+                self.for_pdf.append("\"{}\" <--> Condition: {}".format(casresult[0], casresult[5]))
                 self.Output_View.append(
                     "Keyword: {} found & CAS number: {} found".format(nameresult[0], casresult[0]))
                 if casresult[1]:
@@ -285,11 +303,12 @@ class Ui_MainWindow(object):
                     casresult[0], casresult[3],
                     nameresult[0], nameresult[5], casresult[0], casresult[5]))
 
-                # If casresult or nameresult was not found
+            # If casresult and nameresult was not found
             elif casresult is None and nameresult is None:
                 if keyValue:
                     # if there are any suggestions that the user might have asked then show them the suggestions
                     if results:
+                        # Suggest the user some results that might have been what he was searching for
                         for result in results:
                             return self.Output_View.append("Did you perhaps mean {}?".format(result[0]))
                     return self.Output_View.append(
@@ -301,55 +320,65 @@ class Ui_MainWindow(object):
 
             # If nothing in casresult or nameresult then do this
             elif casresult is None or nameresult is None:
-                # Just shows the user the keyword he searched for
+                # If casresult is none do this
                 if casresult is None:
                     if self.for_pdf_header:
-                        self.for_pdf_header.append("".join(nameresult[0]))
-                        self.for_pdf.append("ECno: " + nameresult[2])
-                        self.for_pdf.append("CASno: " + nameresult[3])
-                        self.for_pdf.append("Condition: " + nameresult[5])
+                        self.for_pdf_header.append(str(keyValue))
+                        self.for_pdf.append("Keyword --> {}".format(nameresult[0]))
+                        self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                        self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                        self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
                         self.Output_View.append("\n\nThe keyword {} was found:\n".format(keyValue))
+                        # If there is a description for the chemical product do this
                         if nameresult[1]:
-                            self.Output_View.append("Description: {}\n".format(nameresult[1]))
+                            self.for_pdf.append("\"{}\" <--> Description: {}\n".format(nameresult[0], nameresult[1]))
+                            self.Output_View.append("\"{}\" <--> Description: {}\n".format(nameresult[0], nameresult[1]))
 
                         return self.Output_View.append(
                             "ECno: {}\nCASno: {}\nCondition: {}".format(nameresult[2], nameresult[3], nameresult[5]))
 
-                    self.for_pdf_header.append("".join(nameresult[0]))
-                    self.for_pdf.append("ECno: " + nameresult[2])
-                    self.for_pdf.append("CASno: " + nameresult[3])
-                    self.for_pdf.append("Condition: " + nameresult[5])
+                    self.for_pdf_header.append(str(keyValue))
+                    self.for_pdf.append("Keyword --> {}".format(nameresult[0]))
+                    self.for_pdf.append("\"{}\" <--> ECno: {}".format(nameresult[0], nameresult[2]))
+                    self.for_pdf.append("\"{}\" <--> CASno: {}".format(nameresult[0], nameresult[3]))
+                    self.for_pdf.append("\"{}\" <--> Condition: {}".format(nameresult[0], nameresult[5]))
                     self.Output_View.append("The keyword {} was found:\n".format(keyValue))
                     if nameresult[1]:
-                        self.Output_View.append("Description: {}\n".format(nameresult[1]))
+                        self.for_pdf.append("\"{}\" <--> Description: {}\n".format(nameresult[0], nameresult[1]))
+                        self.Output_View.append("\"{}\" <--> Description: {}\n".format(nameresult[0], nameresult[1]))
                     return self.Output_View.append(
                         "ECno: {}\nCASno: {}\nCondition: {}".format(nameresult[2], nameresult[3], nameresult[5]))
-                # Shows the user the CAS number he searched for
+                # If nameresult was None do this
                 elif nameresult is None:
                     # If text already in the text box then add 2 lines
                     if self.for_pdf_header:
-                        self.for_pdf_header.append("".join(casresult[0]))
-                        self.for_pdf.append("ECno: " + casresult[2])
-                        self.for_pdf.append("CASno: " + casresult[3])
-                        self.for_pdf.append("Condition: " + casresult[5])
+                        self.for_pdf_header.append("CAS: " + casValue)
+                        self.for_pdf.append("Keyword --> {}".format(casresult[0]))
+                        self.for_pdf.append("\"{}\" <--> ECno: {}".format(casresult[0], casresult[2]))
+                        self.for_pdf.append("\"{}\" <--> CASno: {}".format(casresult[0], casresult[3]))
+                        self.for_pdf.append("\"{}\" <--> Condition: {}".format(casresult[0], casresult[5]))
 
                         self.Output_View.append("\n\nThe CAS number {} was found:\n".format(casValue))
                         if casresult[1]:
-                            self.Output_View.append("Description: {}\n".format(casresult[1]))
+                            self.for_pdf.append("\"{}\" <--> Description: {}\n".format(casresult[0], casresult[1]))
+                            self.Output_View.append("\"{}\" <--> Description: {}\n".format(casresult[0], casresult[1]))
 
                         return self.Output_View.append(
                             "Keyword: {}\nECno: {}\nCASno: {}\nCondition: {}".format(casresult[0],
                                                                                      casresult[2],
                                                                                      casresult[3],
                                                                                      casresult[5]))
-                    self.for_pdf_header.append("".join(casresult[0]))
-                    self.for_pdf.append("ECno: " + casresult[2])
-                    self.for_pdf.append("CASno: " + casresult[3])
-                    self.for_pdf.append("Condition: " + casresult[5])
+                    # self.for_pdf_header.append("".join(casresult[0])) gets the header for the pdf file
+                    self.for_pdf_header.append("CAS: " + str(casValue))
+                    self.for_pdf.append("Keyword --> {}".format(casresult[0]))
+                    self.for_pdf.append("\"{}\" <--> ECno: {}".format(casresult[0], casresult[2]))
+                    self.for_pdf.append("\"{}\" <--> CASno: {}".format(casresult[0], casresult[3]))
+                    self.for_pdf.append("\"{}\" <--> Condition: {}".format(casresult[0], casresult[5]))
 
                     self.Output_View.append("The CAS number {} was found:\n".format(casValue))
                     if casresult[1]:
-                        self.Output_View.append("Description: {}\n".format(casresult[1]))
+                        self.for_pdf.append("\"{}\" <--> Description: {}\n".format(casresult[0], casresult[1]))
+                        self.Output_View.append("\"{}\" <--> Description: {}\n".format(casresult[0], casresult[1]))
 
                     return self.Output_View.append(
                         "Keyword: {}\nECno: {}\nCASno: {}\nCondition: {}".format(casresult[0],

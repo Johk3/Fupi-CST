@@ -1,0 +1,32 @@
+########################THIS IS MUST READ##########################
+If you want everything to work properly when adding new databases follow this instruction
+
+
+--- THE TABLE NAME OF THE SQLITE DATABASE HAS TO BE NAMED "results" THE PROGRAM ONLY READS FROM THE TABLE "results"
+---THE "results" TABLE HAS TO BE ALLIGNED LIKE THIS AND IT HAS TO BE NAMED LIKE THIS:
+	Name	Description	ECno	CASno	Indexno	Condition
+	first	If		Has	has	this	should
+	row	the		to	to	should	store
+	has	item		store	store	be	a
+	to	has		the	the	empty	link
+	be	some		ECno	CAS	but	to
+	named	kind		number	number	this	some
+	name	of		like	like	needs	info
+	and	description	for	for	to	about
+	has	put		example	example	be	the
+	to	it		"215-605-7"	here	chemical
+	contain	here			"1333-74-0"
+	keywords	
+	like	this
+	for	does
+	example	not
+	"lithium"
+		need
+		to
+		be
+		filled
+		if
+		item
+		has
+		no 
+		description
